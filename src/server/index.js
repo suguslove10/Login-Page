@@ -11,9 +11,9 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Configure CORS
+// Configure CORS to allow frontend domain
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://your-netlify-app.netlify.app'],
   credentials: true
 }));
 
@@ -22,6 +22,11 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'Vendor Portal API is running' });
+});
 
 const PORT = process.env.PORT || 3000;
 
