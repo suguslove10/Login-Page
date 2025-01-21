@@ -1,60 +1,20 @@
-import { useState, FormEvent, ChangeEvent } from 'react';
+import React, { useState } from 'react';
 import { Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface FormData {
-  email: string;
-  password: string;
-  storeName: string;
-}
-
 function Register() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    password: '',
-    storeName: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [storeName, setStoreName] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = useState(false);
 
-  const validateEmail = (email: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error when user starts typing
-    setError('');
-  };
-
-  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    // Frontend validation
-    if (!formData.storeName.trim()) {
-      setError('Store name is required');
-      return;
-    }
-    if (formData.storeName.length < 2) {
-      setError('Store name must be at least 2 characters long');
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
     setLoading(true);
+    setError('');
 
     try {
       const response = await fetch('http://localhost:3000/api/auth/register', {
@@ -62,7 +22,7 @@ function Register() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ email, password, storeName }),
       });
 
       const data = await response.json();
@@ -71,14 +31,16 @@ function Register() {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Store the token in localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('vendor', JSON.stringify(data.vendor));
-
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Show success message
+      setSuccess(true);
+      
+      // Redirect to login page after 2 seconds
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during registration');
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -112,6 +74,21 @@ function Register() {
           </div>
         )}
 
+        {success && (
+          <div className="bg-green-50 border-l-4 border-green-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700">Registration successful! Redirecting to login...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleRegister}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
@@ -123,8 +100,8 @@ function Register() {
                 name="storeName"
                 type="text"
                 required
-                value={formData.storeName}
-                onChange={handleChange}
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="My Awesome Store"
               />
@@ -140,8 +117,8 @@ function Register() {
                 type="email"
                 autoComplete="email"
                 required
-                value={formData.email}
-                onChange={handleChange}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="vendor@example.com"
               />
@@ -157,8 +134,8 @@ function Register() {
                 type="password"
                 autoComplete="new-password"
                 required
-                value={formData.password}
-                onChange={handleChange}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="••••••••"
               />
@@ -168,10 +145,10 @@ function Register() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || success}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? 'Creating account...' : success ? 'Account created!' : 'Create Account'}
             </button>
           </div>
         </form>
